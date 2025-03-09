@@ -1,48 +1,49 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Habilitar CORS
+// Middleware
 app.use(cors());
+app.use(express.json());
 
-// URL do JSON no GitHub
-const JSON_URL = 'https://raw.githubusercontent.com/seu-usuario/api-taco/main/TACO.json';
+// Carregar os dados do arquivo JSON
+const data = JSON.parse(fs.readFileSync("TACO.json", "utf8"));
 
-// Rota para listar todos os alimentos
-app.get('/alimentos', async (req, res) => {
-    try {
-        const response = await axios.get(JSON_URL);
-        const data = response.data;
-        res.json(data);
-    } catch (error) {
-        res.status(500).json({ error: 'Erro ao carregar os dados' });
-    }
+// Rota padrão
+app.get("/", (req, res) => {
+  res.send("API da Tabela TACO rodando!");
 });
 
-// Rota para buscar um alimento pelo nome
-app.get('/buscar', async (req, res) => {
-    try {
-        const response = await axios.get(JSON_URL);
-        const data = response.data;
-        const nome = req.query.nome ? req.query.nome.toLowerCase() : '';
+// Rota para listar todos os alimentos
+app.get("/alimentos", (req, res) => {
+  res.json(data);
+});
 
-        // Filtrando pelo campo 'description'
-        const resultado = data.filter(item => item.description.toLowerCase().includes(nome));
+// Rota para buscar alimentos pelo nome (usando "description")
+app.get("/buscar", (req, res) => {
+  const nome = req.query.nome;
+  if (!nome) {
+    return res.status(400).json({ error: "Parâmetro 'nome' é obrigatório." });
+  }
 
-        if (resultado.length === 0) {
-            return res.status(404).json({ error: 'Alimento não encontrado' });
-        }
+  const resultado = data.filter((item) =>
+    item.description.toLowerCase().includes(nome.toLowerCase())
+  );
 
-        res.json(resultado);
-    } catch (error) {
-        res.status(500).json({ error: 'Erro ao buscar alimento' });
-    }
+  if (resultado.length === 0) {
+    return res.status(404).json({ error: "Nenhum alimento encontrado." });
+  }
+
+  res.json(resultado);
 });
 
 // Iniciar o servidor
 app.listen(PORT, () => {
-    console.log(`API rodando em http://localhost:${PORT}`);
+  console.log(`API rodando em http://localhost:${PORT}`);
 });
+
+
+      
